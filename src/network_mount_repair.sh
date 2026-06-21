@@ -45,7 +45,7 @@ done
 
 if [ -z "$ACTION" ] && ! $RESTART_SERVICES; then echo "Choose at least one repair action." >&2; exit 2; fi
 if [ "$ACTION" = "mount" ] || [ "$ACTION" = "unmount" ] || [ "$ACTION" = "remount" ]; then [ -n "$TARGET" ] || { echo "A target is required." >&2; exit 2; }; fi
-$LAZY && [ "$ACTION" = "unmount" ] || { $LAZY || true; }
+if $LAZY && [ "$ACTION" != "unmount" ]; then echo "--lazy requires --unmount TARGET." >&2; exit 2; fi
 
 STAMP=$(date +%Y%m%d_%H%M%S)
 OUTPUT_DIR="${OUTPUT_DIR:-./network-mount-repair-$STAMP}"
