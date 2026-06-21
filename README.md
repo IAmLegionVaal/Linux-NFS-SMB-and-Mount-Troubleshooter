@@ -1,22 +1,8 @@
 # Linux NFS, SMB and Mount Troubleshooter
 
-A read-only Bash toolkit for diagnosing NFS, SMB/CIFS, stale mounts, mount timeouts, DNS, TCP reachability, permissions, and network-storage service issues.
+A Linux support toolkit for diagnosing and repairing selected NFS, SMB/CIFS and network-mount problems.
 
-## Checks performed
-
-- Mounted NFS and CIFS filesystems
-- Persistent mount definitions from `/etc/fstab` with password values redacted
-- Mount options, source, target, filesystem type, and free space
-- Basic read responsiveness for every network mount using timeouts
-- NFS client statistics and mount information
-- SMB client package and kernel module availability
-- RPC service and portmapper context
-- Systemd mount units and failed mount units
-- Recent kernel and journal events related to NFS, CIFS, RPC, stale handles, timeouts, and permission failures
-- Optional DNS, route, TCP 2049, TCP 445, export, and share tests for a supplied server
-- Text, CSV, and JSON reports
-
-## Usage
+## Diagnostic script
 
 ```bash
 chmod +x src/network_mount_troubleshooter.sh
@@ -29,29 +15,59 @@ Test a specific server:
 sudo ./src/network_mount_troubleshooter.sh --server fileserver.example.com --hours 48
 ```
 
-## Safety
+## Repair script
 
-The toolkit does not mount, unmount, remount, disconnect, modify credentials, change `/etc/fstab`, restart storage services, or write test files to remote shares.
+Preview a repair:
 
-## Privacy
+```bash
+chmod +x src/network_mount_repair.sh
+sudo ./src/network_mount_repair.sh --mount-all --dry-run
+```
 
-Credential values embedded directly in mount options are redacted from the generated report. Paths, hostnames, usernames, and share names may still be sensitive and should be reviewed before sharing.
+Mount one `/etc/fstab` target:
 
-## Requirements
+```bash
+sudo ./src/network_mount_repair.sh --mount /mnt/shared
+```
 
-- Bash 4+
-- `findmnt`, `mount`, and standard GNU utilities
-- Optional: `nfs-utils`/`nfs-common`, `cifs-utils`, `smbclient`, `rpcinfo`, and `showmount`
+Unmount or remount one network filesystem:
 
-## Validation ideas
+```bash
+sudo ./src/network_mount_repair.sh --unmount /mnt/shared
+sudo ./src/network_mount_repair.sh --remount /mnt/shared
+```
 
-- Healthy NFS mount
-- Healthy CIFS mount
-- Unreachable file server
-- Stale NFS handle
-- Incorrect share permissions
-- Failed systemd mount unit
-- Host with no network mounts
+Use lazy unmount only for a confirmed stale network mount:
+
+```bash
+sudo ./src/network_mount_repair.sh --unmount /mnt/shared --lazy
+```
+
+Restart installed network-filesystem client services:
+
+```bash
+sudo ./src/network_mount_repair.sh --restart-services
+```
+
+Validate and mount all configured filesystems:
+
+```bash
+sudo ./src/network_mount_repair.sh --mount-all
+```
+
+## What the repair does
+
+- Validates `/etc/fstab` and backs it up into the report directory.
+- Mounts one selected target defined in `/etc/fstab`.
+- Unmounts or remounts one selected NFS or CIFS filesystem.
+- Can perform a guarded lazy unmount for a stale network mount.
+- Restarts installed RPC, NFS and SMB client helper services.
+- Captures network-mount and failed mount-unit state before and after repair.
+- Supports dry-run, confirmation prompts, logs and clear exit codes.
+
+## Safety and limitations
+
+Mount changes can interrupt applications using the selected share. The tool refuses unmount or remount actions against non-network filesystems. It does not edit credentials, share definitions or `/etc/fstab` automatically.
 
 ## Author
 
