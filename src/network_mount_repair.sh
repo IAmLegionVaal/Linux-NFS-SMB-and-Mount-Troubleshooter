@@ -61,7 +61,14 @@ confirm() { $ASSUME_YES && return 0; read -r -p "$1 [y/N]: " answer; case "$answ
 run_action() {
   local description="$1"; shift
   ACTIONS=$((ACTIONS + 1)); log "$description"
-  if $DRY_RUN; then printf 'DRY-RUN:' >> "$LOG"; printf ' %q' "$@" >> "$LOG"; printf '\n' >> "$LOG"; return 0; fi
+  if $DRY_RUN; then
+    {
+      printf 'DRY-RUN:'
+      printf ' %q' "$@"
+      printf '\n'
+    } >> "$LOG"
+    return 0
+  fi
   if "$@" >> "$LOG" 2>&1; then log "SUCCESS: $description"; return 0; fi
   FAILURES=$((FAILURES + 1)); log "WARNING: $description failed"; return 1
 }
@@ -97,7 +104,9 @@ restart_client_services() {
 }
 
 collect_state "$BEFORE"
-[ -f /etc/fstab ] && cp -a /etc/fstab "$BACKUP_DIR/fstab" 2>/dev/null || true
+if [ -f /etc/fstab ]; then
+  cp -a /etc/fstab "$BACKUP_DIR/fstab" 2>/dev/null || true
+fi
 confirm "Apply the selected network-mount repairs? Applications using the mount may be interrupted." || { log "Repair cancelled."; exit 10; }
 
 $RESTART_SERVICES && restart_client_services
