@@ -1,0 +1,38 @@
+name: Apply audited shell parser fix
+on:
+  push:
+    branches: [fix-shell-parser]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-shell-parser
+      - name: Correct and validate shell source
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/network_mount_troubleshooter.sh')
+          text = path.read_text(encoding='utf-8')
+          old = r'value="${value//"/""}"'
+          new = r'value="${value//\"/\"\"}"'
+          if old not in text:
+              raise SystemExit('Expected malformed CSV escaping was not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          bash -n src/network_mount_troubleshooter.sh
+          shellcheck -S error src/network_mount_troubleshooter.sh
+      - name: Commit validated fix
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/network_mount_troubleshooter.sh
+          git rm .github/workflows/audit-shell-fix.yml
+          git commit -m "fix: correct shell parser error in CSV escaping"
+          git push origin HEAD:${GITHUB_REF_NAME}
