@@ -49,7 +49,7 @@ have() { command -v "$1" >/dev/null 2>&1; }
 
 csv_escape() {
   local value="$1"
-  value="${value//"/""}"
+  value="${value//\"/\"\"}"
   printf '"%s"' "$value"
 }
 
